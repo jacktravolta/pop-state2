@@ -1,152 +1,350 @@
+{# ============================================================================
+  POP ESTATE - settlement/index.html.twig
+  Liquidaciones - Listado + KPIs + filtros + tabla + anular con auditoría
+    - KPI: total, pendientes, pagadas, anuladas (desde getKpiData)
+    - Filtro live JS + submit 700ms + filtro estado
+    - Acciones: ver (modal CRUD), editar (solo PENDIENTE), PDF, anular con motivo
+    - Hereda base.html.twig con openCrudModal y bootstrap
+  ============================================================================ #}
 {% extends 'base.html.twig' %}
+
 {% block title %}Liquidaciones{% endblock %}
+
 {% block body %}
 <div class="container-fluid p-4">
-  {# KPI REAL req #5 - header con info real desde getKpiData() #}
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-xl-3">
-      <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #6366f1!important">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <small style="font-size:11px;color:#64748b;letter-spacing:.05em">TOTAL LIQUIDACIONES</small>
-            <h4 class="mb-0 fw-bold" style="color:#0f172a">{{ kpi.total }}</h4>
-            <small style="font-size:11px;color:#6366f1">${{ kpi.totalMonto|number_format(0, ',', '.') }} total</small>
-          </div>
-          <div style="width:44px;height:44px;background:#eef2ff;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#6366f1"><i class="bi bi-receipt fs-5"></i></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-xl-3">
-      <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #f59e0b!important">
-        <div class="d-flex justify-content-between align-items-center">
-          <div><small style="font-size:11px;color:#64748b">PENDIENTES</small><h4 class="mb-0 fw-bold">{{ kpi.pendientesCount }}</h4><small style="font-size:11px;color:#92400e">${{ kpi.pendientesMonto|number_format(0, ',', '.') }}</small></div>
-          <div style="width:44px;height:44px;background:#fef3c7;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#92400e"><i class="bi bi-hourglass-split"></i></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-xl-3">
-      <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #10b981!important">
-        <div class="d-flex justify-content-between align-items-center">
-          <div><small style="font-size:11px;color:#64748b">PAGADAS</small><h4 class="mb-0 fw-bold">{{ kpi.pagadasCount }}</h4><small style="font-size:11px;color:#059669">${{ kpi.pagadasMonto|number_format(0, ',', '.') }}</small></div>
-          <div style="width:44px;height:44px;background:#ecfdf5;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#059669"><i class="bi bi-check-circle"></i></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-xl-3">
-      <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #ef4444!important">
-        <div class="d-flex justify-content-between align-items-center">
-          <div><small style="font-size:11px;color:#64748b">ANULADAS</small><h4 class="mb-0 fw-bold">{{ kpi.anuladasCount }}</h4><small style="font-size:11px;color:#991b1b">${{ kpi.anuladasMonto|number_format(0, ',', '.') }}</small></div>
-          <div style="width:44px;height:44px;background:#fef2f2;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#ef4444"><i class="bi bi-x-circle"></i></div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h4 class="mb-0">Liquidaciones <span class="badge bg-light text-dark border">{{ totalResults }} resultados</span></h4>
-    <div class="d-flex gap-2 align-items-center flex-wrap">
-      <form method="get" action="{{ path('app_settlement_index') }}" class="d-flex gap-2" id="searchForm">
-        <input type="text" name="q" value="{{ q }}" id="searchInput" class="form-control form-control-sm" style="width:280px;border-radius:12px!important" placeholder="🔍 Buscar ID, propiedad, estado, observacion...">
-        <select name="estado" id="estadoFilter" class="form-select form-select-sm" style="width:150px;border-radius:12px!important">
-          <option value="">Todos estados</option>
-          <option value="PENDIENTE" {% if estadoFilter == 'PENDIENTE' %}selected{% endif %}>PENDIENTE</option>
-          <option value="PAGADA" {% if estadoFilter == 'PAGADA' %}selected{% endif %}>PAGADA</option>
-          <option value="ANULADA" {% if estadoFilter == 'ANULADA' %}selected{% endif %}>ANULADA</option>
-        </select>
-      </form>
-      <a href="{{ path('app_settlement_new') }}" class="btn btn-sm rounded-pill px-3" style="background:#6366f1;color:white;font-weight:600"><i class="bi bi-plus-lg me-1"></i> Nueva</a>
-    </div>
-  </div>
+    {# ===================== KPI REAL - req #5 ===================== #}
+    <div class="row g-3 mb-4">
+        {# TOTAL #}
+        <div class="col-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #6366f1!important">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small style="font-size:11px;color:#64748b;letter-spacing:.05em">TOTAL LIQUIDACIONES</small>
+                        <h4 class="mb-0 fw-bold" style="color:#0f172a">{{ kpi.total }}</h4>
+                        <small style="font-size:11px;color:#6366f1">${{ kpi.totalMonto|number_format(0, ',', '.') }} total</small>
+                    </div>
+                    <div style="width:44px;height:44px;background:#eef2ff;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#6366f1">
+                        <i class="bi bi-receipt fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  <div class="card border-0 shadow-sm rounded-4" style="border:1.5px solid #e2e8f0!important; overflow:hidden">
-    <div class="table-responsive">
-      <table class="table table-hover mb-0" style="font-size:13px" id="settlementTable">
-        <thead style="background:#f8fafc;font-size:11px;color:#64748b"><tr><th style="padding:14px 16px">#</th><th>Propiedad</th><th>Periodo</th><th>Cargo</th><th>Desc</th><th>Total</th><th>Estado</th><th class="text-end" style="padding-right:16px">Acciones: ver, editar, eliminar</th></tr></thead>
-        <tbody id="settlementTbody">
-        {% for s in settlements %}
-          <tr data-search="{{ s.id }} {{ s.property.direccion }} {{ s.estado }} {{ s.observacion }}" data-estado="{{ s.estado }}">
-            <td class="fw-bold" style="padding:12px 16px">#{{ s.id }}</td>
-            <td><div style="font-weight:600;color:#0f172a">{{ s.property.direccion ?? '-' }}</div>{% if s.observacion %}<small style="color:#6366f1;font-size:10px">📝 {{ s.observacion|slice(0,40) }}</small>{% endif %}</td>
-            <td style="font-size:11px;color:#64748b">{{ s.fechaInicio|date('d/m/y') }} → {{ s.fechaTermino|date('d/m/y') }}</td>
-            <td>${{ s.totalCargo|number_format(0, ',', '.') }}</td>
-            <td class="text-danger">-${{ s.totalDescuento|number_format(0, ',', '.') }}</td>
-            <td class="fw-bold" style="color:#6366f1">${{ s.total|number_format(0, ',', '.') }}</td>
-            <td>
-              {% if s.estado == 'PAGADA' %}<span class="badge" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;font-size:10px">PAGADA</span>
-              {% elseif s.estado == 'ANULADA' %}<span class="badge" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:10px">ANULADA</span>
-              {% else %}<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:10px">PENDIENTE</span>{% endif %}
-            </td>
-            <td class="text-end" style="padding-right:16px">
-              <div class="d-inline-flex gap-1">
-                <a href="javascript:void(0)" onclick="openCrudModal('{{ path('app_settlement_show', {'id': s.id}) }}')" class="btn btn-sm" style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#eef2ff;color:#6366f1;border:1px solid #e0e7ff" title="Ver"><i class="bi bi-eye"></i></a>
-                {% if s.estado == 'PENDIENTE' %}
-                  <a href="{{ path('app_settlement_edit', {'id': s.id}) }}" class="btn btn-sm" style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#f8fafc;color:#0f172a;border:1px solid #e2e8f0" title="Editar"><i class="bi bi-pencil"></i></a>
+        {# PENDIENTES - Amarillo #}
+        <div class="col-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #f59e0b!important">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small style="font-size:11px;color:#64748b">PENDIENTES</small>
+                        <h4 class="mb-0 fw-bold">{{ kpi.pendientesCount }}</h4>
+                        <small style="font-size:11px;color:#92400e">${{ kpi.pendientesMonto|number_format(0, ',', '.') }}</small>
+                    </div>
+                    <div style="width:44px;height:44px;background:#fef3c7;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#92400e">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# PAGADAS - Verde #}
+        <div class="col-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #10b981!important">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small style="font-size:11px;color:#64748b">PAGADAS</small>
+                        <h4 class="mb-0 fw-bold">{{ kpi.pagadasCount }}</h4>
+                        <small style="font-size:11px;color:#059669">${{ kpi.pagadasMonto|number_format(0, ',', '.') }}</small>
+                    </div>
+                    <div style="width:44px;height:44px;background:#ecfdf5;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#059669">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ANULADAS - Rojo #}
+        <div class="col-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #ef4444!important">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small style="font-size:11px;color:#64748b">ANULADAS</small>
+                        <h4 class="mb-0 fw-bold">{{ kpi.anuladasCount }}</h4>
+                        <small style="font-size:11px;color:#991b1b">${{ kpi.anuladasMonto|number_format(0, ',', '.') }}</small>
+                    </div>
+                    <div style="width:44px;height:44px;background:#fef2f2;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#ef4444">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ===================== HEADER + BUSCADOR ===================== #}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h4 class="mb-0">
+            Liquidaciones
+            <span class="badge bg-light text-dark border">{{ totalResults }} resultados</span>
+        </h4>
+
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <form method="get" action="{{ path('app_settlement_index') }}" class="d-flex gap-2" id="searchForm">
+                <input type="text"
+                       name="q"
+                       value="{{ q }}"
+                       id="searchInput"
+                       class="form-control form-control-sm"
+                       style="width:280px;border-radius:12px!important"
+                       placeholder="🔍 Buscar ID, propiedad, estado, observacion...">
+
+                <select name="estado"
+                        id="estadoFilter"
+                        class="form-select form-select-sm"
+                        style="width:150px;border-radius:12px!important">
+                    <option value="">Todos estados</option>
+                    <option value="PENDIENTE" {% if estadoFilter == 'PENDIENTE' %}selected{% endif %}>PENDIENTE</option>
+                    <option value="PAGADA" {% if estadoFilter == 'PAGADA' %}selected{% endif %}>PAGADA</option>
+                    <option value="ANULADA" {% if estadoFilter == 'ANULADA' %}selected{% endif %}>ANULADA</option>
+                </select>
+            </form>
+
+            <a href="{{ path('app_settlement_new') }}"
+               class="btn btn-sm rounded-pill px-3"
+               style="background:#6366f1;color:white;font-weight:600">
+                <i class="bi bi-plus-lg me-1"></i> Nueva
+            </a>
+        </div>
+    </div>
+
+    {# ===================== TABLA ===================== #}
+    <div class="card border-0 shadow-sm rounded-4" style="border:1.5px solid #e2e8f0!important; overflow:hidden">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:13px" id="settlementTable">
+                <thead style="background:#f8fafc;font-size:11px;color:#64748b">
+                    <tr>
+                        <th style="padding:14px 16px">#</th>
+                        <th>Propiedad</th>
+                        <th>Periodo</th>
+                        <th>Cargo</th>
+                        <th>Desc</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th class="text-end" style="padding-right:16px">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="settlementTbody">
+                {% for s in settlements %}
+                    <tr data-search="{{ s.id }} {{ s.property.direccion }} {{ s.estado }} {{ s.observacion }}"
+                        data-estado="{{ s.estado }}">
+
+                        <td class="fw-bold" style="padding:12px 16px">#{{ s.id }}</td>
+
+                        <td>
+                            <div style="font-weight:600;color:#0f172a">{{ s.property.direccion ?? '-' }}</div>
+                            {% if s.observacion %}
+                                <small style="color:#6366f1;font-size:10px">📝 {{ s.observacion|slice(0,40) }}</small>
+                            {% endif %}
+                        </td>
+
+                        <td style="font-size:11px;color:#64748b">
+                            {{ s.fechaInicio|date('d/m/y') }} → {{ s.fechaTermino|date('d/m/y') }}
+                        </td>
+
+                        <td>${{ s.totalCargo|number_format(0, ',', '.') }}</td>
+                        <td class="text-danger">-${{ s.totalDescuento|number_format(0, ',', '.') }}</td>
+                        <td class="fw-bold" style="color:#6366f1">${{ s.total|number_format(0, ',', '.') }}</td>
+
+                        <td>
+                            {% if s.estado == 'PAGADA' %}
+                                <span class="badge" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;font-size:10px">PAGADA</span>
+                            {% elseif s.estado == 'ANULADA' %}
+                                <span class="badge" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:10px">ANULADA</span>
+                            {% else %}
+                                <span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:10px">PENDIENTE</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-end" style="padding-right:16px">
+                            <div class="d-inline-flex gap-1">
+                                {# Ver - modal CRUD base #}
+                                <a href="javascript:void(0)"
+                                   onclick="openCrudModal('{{ path('app_settlement_show', {'id': s.id}) }}')"
+                                   class="btn btn-sm"
+                                   style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#eef2ff;color:#6366f1;border:1px solid #e0e7ff"
+                                   title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+
+                                {# ----------------- BOTÓN PAGAR CON MODAL CONFIRMACIÓN ----------------- #}
+                                {% if s.estado == 'PENDIENTE' %}
+                                    <button class="btn btn-sm"
+                                            style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0"
+                                            title="Pagar liquidación #{{ s.id }}"
+                                            onclick="openConfirmModal(
+                                                'Pagar liquidación #{{ s.id }}',
+                                                '¿Seguro que quieres marcar como PAGADA la liquidación de {{ s.property.direccion|e('js') }} por ${{ s.total|number_format(0,',','.') }}?',
+                                                'success',
+                                                'Sí, pagar',
+                                                '{{ path('app_settlement_pagar', {id: s.id}) }}',
+                                                '{{ csrf_token('pagar' ~ s.id) }}'
+                                            )">
+                                        <i class="bi bi-cash-stack"></i>
+                                    </button>
+                                {% endif %}
+
+                                {# Editar solo si PENDIENTE, si no candado #}
+                                {% if s.estado == 'PENDIENTE' %}
+                                    <a href="{{ path('app_settlement_edit', {'id': s.id}) }}"
+                                       class="btn btn-sm"
+                                       style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#f8fafc;color:#0f172a;border:1px solid #e2e8f0"
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-sm" disabled style="width:34px;height:34px;border-radius:10px;background:#f1f5f9;color:#94a3b8">
+                                        <i class="bi bi-lock"></i>
+                                    </button>
+                                {% endif %}
+
+                                {# PDF #}
+                                <a href="{{ path('app_settlement_pdf', {'id': s.id}) }}"
+                                   class="btn btn-sm"
+                                   style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#111827;color:white"
+                                   title="PDF">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
+
+                                {# Anular - con observación auditoría #}
+                                {% if s.estado != 'ANULADA' %}
+                                    <button class="btn btn-sm"
+                                            style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#fef2f2;color:#ef4444;border:1px solid #fecaca"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteModal{{ s.id }}"
+                                            title="Anular requiere observacion">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
                 {% else %}
-                  <button class="btn btn-sm" disabled style="width:34px;height:34px;border-radius:10px;background:#f1f5f9;color:#94a3b8"><i class="bi bi-lock"></i></button>
+                    <tr><td colspan="8" class="text-center py-5" style="color:#94a3b8">Sin liquidaciones</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Footer paginación #}
+        <div class="d-flex justify-content-between align-items-center p-3" style="background:#f8fafc;border-top:1px solid #e2e8f0">
+            <div style="font-size:12px;color:#64748b">
+                Página {{ page }}/{{ totalPages }} - {{ totalResults }} resultados - 10 por página - theme lila
+            </div>
+            <div class="d-flex gap-2">
+                {% if page > 1 %}
+                    <a href="{{ path('app_settlement_index', {'q': q, 'estado': estadoFilter, 'page': page-1}) }}"
+                       class="btn btn-sm btn-light rounded-pill px-3 border">Prev</a>
+                {% else %}
+                    <button class="btn btn-sm btn-light rounded-pill px-3 border" disabled>Prev</button>
                 {% endif %}
-                <a href="{{ path('app_settlement_pdf', {'id': s.id}) }}" class="btn btn-sm" style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#111827;color:white" title="PDF"><i class="bi bi-file-earmark-pdf"></i></a>
-                {% if s.estado != 'ANULADA' %}
-                  <button class="btn btn-sm" style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#fef2f2;color:#ef4444;border:1px solid #fecaca" data-bs-toggle="modal" data-bs-target="#deleteModal{{ s.id }}" title="Anular requiere observacion"><i class="bi bi-trash"></i></button>
+
+                {% if page < totalPages %}
+                    <a href="{{ path('app_settlement_index', {'q': q, 'estado': estadoFilter, 'page': page+1}) }}"
+                       class="btn btn-sm rounded-pill px-3" style="background:#6366f1;color:white">Next</a>
+                {% else %}
+                    <button class="btn btn-sm rounded-pill px-3" style="background:#e2e8f0;color:#94a3b8" disabled>Next</button>
                 {% endif %}
-              </div>
-              {% if s.estado != 'ANULADA' %}
-              <div class="modal fade" id="deleteModal{{ s.id }}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content" style="border-radius:20px">
-                <div class="modal-header border-0"><h6 class="fw-bold">Anular liquidación #{{ s.id }}</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <form method="post" action="{{ path('app_settlement_delete', {'id': s.id}) }}">
-                  <div class="modal-body">
-                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ s.id) }}">
-                    <div class="alert" style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:12px;font-size:12px">Pasará a <b>ANULADA</b> (auditoría). Se guardará observación + fecha {{ "now"|date("d/m/Y H:i") }} + usuario {{ app.user.email }}. Mínimo 10 caracteres.</div>
-                    <label class="form-label" style="font-size:12px;font-weight:600">Motivo / Observación auditoría *</label>
-                    <textarea name="motivo" class="form-control" rows="3" required minlength="10" placeholder="Ej: Cliente solicita anulación por error en periodo..." style="border-radius:12px"></textarea>
-                  </div>
-                  <div class="modal-footer border-0"><button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn rounded-pill px-4" style="background:#ef4444;color:white">Anular liquidación</button></div>
-                </form>
-              </div></div></div>
-              {% endif %}
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="8" class="text-center py-5" style="color:#94a3b8">Sin liquidaciones</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
+            </div>
+        </div>
     </div>
-    <div class="d-flex justify-content-between align-items-center p-3" style="background:#f8fafc;border-top:1px solid #e2e8f0">
-      <div style="font-size:12px;color:#64748b">Página {{ page }}/{{ totalPages }} - {{ totalResults }} resultados - 10 por página - theme lila</div>
-      <div class="d-flex gap-2">
-        {% if page > 1 %}<a href="{{ path('app_settlement_index', {'q': q, 'estado': estadoFilter, 'page': page-1}) }}" class="btn btn-sm btn-light rounded-pill px-3 border">Prev</a>{% else %}<button class="btn btn-sm btn-light rounded-pill px-3 border" disabled>Prev</button>{% endif %}
-        {% if page < totalPages %}<a href="{{ path('app_settlement_index', {'q': q, 'estado': estadoFilter, 'page': page+1}) }}" class="btn btn-sm rounded-pill px-3" style="background:#6366f1;color:white">Next</a>{% else %}<button class="btn btn-sm rounded-pill px-3" style="background:#e2e8f0;color:#94a3b8" disabled>Next</button>{% endif %}
-      </div>
-    </div>
-  </div>
+
+    {# ===================== MODALES ANULAR - FUERA DE LA TABLA =====================
+       Antes los tenías dentro del <td> + dentro del loop del tbody -> HTML inválido
+       Ahora fuera de la tabla pero generados por loop, 1 por liquidación
+    #}
+    {% for s in settlements %}
+        {% if s.estado != 'ANULADA' %}
+            <div class="modal fade" id="deleteModal{{ s.id }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="border-radius:20px">
+                        <div class="modal-header border-0">
+                            <h6 class="fw-bold">Anular liquidación #{{ s.id }}</h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="post" action="{{ path('app_settlement_delete', {'id': s.id}) }}">
+                            <div class="modal-body">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ s.id) }}">
+                                <div class="alert" style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:12px;font-size:12px">
+                                    Pasará a <b>ANULADA</b> (auditoría). Se guardará observación + fecha {{ "now"|date("d/m/Y H:i") }} + usuario {{ app.user.email }}. Mínimo 10 caracteres.
+                                </div>
+                                <label class="form-label" style="font-size:12px;font-weight:600">Motivo / Observación auditoría *</label>
+                                <textarea name="motivo"
+                                          class="form-control"
+                                          rows="3"
+                                          required
+                                          minlength="10"
+                                          placeholder="Ej: Cliente solicita anulación por error en periodo..."
+                                          style="border-radius:12px"></textarea>
+                            </div>
+                            <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn rounded-pill px-4" style="background:#ef4444;color:white">Anular liquidación</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+
 </div>
 
-<div class="modal fade" id="newSettlementModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content" style="border-radius:20px;border:0"><div class="modal-body p-0">{{ include('settlement/_form.html.twig', {'form': form}) }}</div></div></div></div>
+{# Modal nuevo - usa _form.html.twig #}
+<div class="modal fade" id="newSettlementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:20px;border:0">
+            <div class="modal-body p-0">
+                {{ include('settlement/_form.html.twig', {'form': form}) }}
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
+/**
+  * Filtro live + submit con debounce
+  * - Filtra filas en frontend por data-search y data-estado
+  * - Luego hace submit del form GET para paginación real
+ */
 document.addEventListener('DOMContentLoaded', function(){
-  var input = document.getElementById('searchInput');
-  var estado = document.getElementById('estadoFilter');
-  var form = document.getElementById('searchForm');
-  var rows = Array.from(document.querySelectorAll('#settlementTbody tr'));
-  function liveFilter(){
-    var q = input.value.toLowerCase();
-    var est = estado.value;
-    rows.forEach(function(tr){
-      var txt = (tr.getAttribute('data-search')||'').toLowerCase();
-      var e = tr.getAttribute('data-estado')||'';
-      var okQ = !q || txt.indexOf(q) !== -1;
-      var okE = !est || e === est;
-      tr.style.display = (okQ && okE) ? '' : 'none';
+    var input = document.getElementById('searchInput');
+    var estado = document.getElementById('estadoFilter');
+    var form = document.getElementById('searchForm');
+    var rows = Array.from(document.querySelectorAll('#settlementTbody tr'));
+
+    function liveFilter(){
+        var q = input.value.toLowerCase();
+        var est = estado.value;
+        rows.forEach(function(tr){
+            var txt = (tr.getAttribute('data-search')||'').toLowerCase();
+            var e = tr.getAttribute('data-estado')||'';
+            var okQ = !q || txt.indexOf(q) !== -1;
+            var okE = !est || e === est;
+            tr.style.display = (okQ && okE) ? '' : 'none';
+        });
+    }
+
+    input.addEventListener('input', function(){
+        liveFilter();
+        clearTimeout(window.searchTimer);
+        window.searchTimer = setTimeout(function(){ form.submit(); }, 700);
     });
-  }
-  input.addEventListener('input', function(){
+
+    estado.addEventListener('change', function(){
+        liveFilter();
+        form.submit();
+    });
+
     liveFilter();
-    clearTimeout(window.searchTimer);
-    window.searchTimer = setTimeout(function(){ form.submit(); }, 700);
-  });
-  estado.addEventListener('change', function(){ liveFilter(); form.submit(); });
-  liveFilter();
 });
 </script>
 {% endblock %}

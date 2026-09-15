@@ -1,43 +1,274 @@
+{# ============================================================================
+  POP ESTATE - invoice/index.html.twig
+  Listado de Facturas con KPIs reales + filtros + tabla + modals anular
+  Hereda de base.html.twig (sidebar + modals CRUD base)
+    - KPI: total, pendientes, emitidas, pagadas final, anuladas, vencidas
+    - Filtro por texto (folio, emisor, receptor) + estado
+    - Acciones: ver, editar (si no pagada/anulada), anular con motivo + CSRF
+    - Paginación: 10 por página
+  ============================================================================ #}
 {% extends 'base.html.twig' %}
+
 {% block title %}Facturas{% endblock %}
+
 {% block body %}
 <div class="container-fluid p-4">
-  {# KPI REAL #}
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-xl-2"><div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #6366f1!important"><small style="font-size:10px;color:#64748b">TOTAL</small><h5 class="fw-bold mb-0">{{ kpi.total }}</h5><small style="font-size:11px;color:#6366f1">${{ kpi.totalMonto|number_format(0,',','.') }}</small></div></div>
-    <div class="col-6 col-xl-2"><div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #f59e0b!important"><small style="font-size:10px;color:#64748b">PENDIENTES</small><h5 class="fw-bold mb-0">{{ kpi.pendientesCount }}</h5><small style="font-size:11px">${{ kpi.pendientesMonto|number_format(0,',','.') }}</small></div></div>
-    <div class="col-6 col-xl-2"><div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #6366f1!important"><small style="font-size:10px;color:#64748b">EMITIDAS</small><h5 class="fw-bold mb-0">{{ kpi.emitidasCount }}</h5><small style="font-size:11px">${{ kpi.emitidasMonto|number_format(0,',','.') }}</small></div></div>
-    <div class="col-6 col-xl-2"><div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #10b981!important"><small style="font-size:10px;color:#64748b">PAGADAS FINAL</small><h5 class="fw-bold mb-0">{{ kpi.pagadasCount }}</h5><small style="font-size:11px">${{ kpi.pagadasMonto|number_format(0,',','.') }}</small></div></div>
-    <div class="col-6 col-xl-2"><div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #ef4444!important"><small style="font-size:10px;color:#64748b">ANULADAS</small><h5 class="fw-bold mb-0">{{ kpi.anuladasCount }}</h5><small style="font-size:11px">${{ kpi.anuladasMonto|number_format(0,',','.') }}</small></div></div>
-    <div class="col-6 col-xl-2"><div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #64748b!important"><small style="font-size:10px;color:#64748b">VENCIDAS</small><h5 class="fw-bold mb-0">{{ kpi.vencidasCount }}</h5><small style="font-size:11px">${{ kpi.vencidasMonto|number_format(0,',','.') }}</small></div></div>
-  </div>
 
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h4 class="mb-0">Facturas <span class="badge bg-light text-dark border">{{ totalResults }} resultados</span></h4>
-    <div class="d-flex gap-2 align-items-center">
-      <form method="get" id="searchForm" class="d-flex gap-2">
-        <input type="text" name="q" id="searchInput" value="{{ q }}" class="form-control form-control-sm" style="width:300px;border-radius:12px" placeholder="🔍 Buscar folio, emisor, receptor...">
-        <select name="estado" id="estadoFilter" class="form-select form-select-sm" style="width:160px;border-radius:12px"><option value="">Todos</option><option value="PENDIENTE" {% if estadoFilter=='PENDIENTE' %}selected{% endif %}>PENDIENTE</option><option value="EMITIDA" {% if estadoFilter=='EMITIDA' %}selected{% endif %}>EMITIDA</option><option value="PAGADA" {% if estadoFilter=='PAGADA' %}selected{% endif %}>PAGADA</option><option value="ANULADA" {% if estadoFilter=='ANULADA' %}selected{% endif %}>ANULADA</option></select>
-      </form>
-      {# BOTON NUEVA ENGANCHADO CON GENERADOR POR PERIODOS #}
-      <div class="btn-group">
-        <a href="{{ path('app_invoice_new') }}" class="btn btn-sm rounded-start-pill px-3 border" style="background:white;color:#0f172a">+ Nueva manual</a>
-        <a href="{{ path('app_invoice_generator') }}" class="btn btn-sm rounded-end-pill px-3" style="background:#6366f1;color:white;font-weight:600">⚡ Generar por periodos</a>
-      </div>
+    {# ===================== KPI REAL =====================
+       Cada card con borde izquierdo de color según estado
+       kpi.totalMonto, kpi.pendientesMonto etc vienen del controller
+    #}
+    <div class="row g-3 mb-4">
+        {# TOTAL #}
+        <div class="col-6 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #6366f1!important">
+                <small style="font-size:10px;color:#64748b">TOTAL</small>
+                <h5 class="fw-bold mb-0">{{ kpi.total }}</h5>
+                <small style="font-size:11px;color:#6366f1">${{ kpi.totalMonto|number_format(0,',','.') }}</small>
+            </div>
+        </div>
+
+        {# PENDIENTES #}
+        <div class="col-6 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #f59e0b!important">
+                <small style="font-size:10px;color:#64748b">PENDIENTES</small>
+                <h5 class="fw-bold mb-0">{{ kpi.pendientesCount }}</h5>
+                <small style="font-size:11px">${{ kpi.pendientesMonto|number_format(0,',','.') }}</small>
+            </div>
+        </div>
+
+        {# EMITIDAS #}
+        <div class="col-6 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #6366f1!important">
+                <small style="font-size:10px;color:#64748b">EMITIDAS</small>
+                <h5 class="fw-bold mb-0">{{ kpi.emitidasCount }}</h5>
+                <small style="font-size:11px">${{ kpi.emitidasMonto|number_format(0,',','.') }}</small>
+            </div>
+        </div>
+
+        {# PAGADAS FINAL - Verde #}
+        <div class="col-6 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #10b981!important">
+                <small style="font-size:10px;color:#64748b">PAGADAS FINAL</small>
+                <h5 class="fw-bold mb-0">{{ kpi.pagadasCount }}</h5>
+                <small style="font-size:11px">${{ kpi.pagadasMonto|number_format(0,',','.') }}</small>
+            </div>
+        </div>
+
+        {# ANULADAS - Rojo #}
+        <div class="col-6 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #ef4444!important">
+                <small style="font-size:10px;color:#64748b">ANULADAS</small>
+                <h5 class="fw-bold mb-0">{{ kpi.anuladasCount }}</h5>
+                <small style="font-size:11px">${{ kpi.anuladasMonto|number_format(0,',','.') }}</small>
+            </div>
+        </div>
+
+        {# VENCIDAS - Gris #}
+        <div class="col-6 col-xl-2">
+            <div class="card border-0 shadow-sm rounded-4 p-3" style="border-left:4px solid #64748b!important">
+                <small style="font-size:10px;color:#64748b">VENCIDAS</small>
+                <h5 class="fw-bold mb-0">{{ kpi.vencidasCount }}</h5>
+                <small style="font-size:11px">${{ kpi.vencidasMonto|number_format(0,',','.') }}</small>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div class="card border-0 shadow-sm rounded-4" style="border:1.5px solid #e2e8f0!important;overflow:hidden">
-    <div class="table-responsive"><table class="table table-hover mb-0 align-middle" style="font-size:13px"><thead style="background:#f8fafc;font-size:11px;color:#64748b"><tr><th>#</th><th>Folio</th><th>Receptor</th><th>Periodo</th><th class="text-end">Total</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead><tbody id="crudTbody">
-    {% for i in invoices %}{% set est=i.estado|upper %}<tr data-search="{{ i.id }} {{ i.folio }} {{ i.emisor }} {{ i.receptor }} {{ i.periodo }}" data-estado="{{ est }}" {% if est=='PAGADA' %}style="opacity:.7"{% endif %}>
-      <td class="text-muted">#{{ i.id }}</td><td class="fw-semibold">{{ i.folio }}</td><td><b>{{ i.receptor|default('-')|slice(0,30) }}</b><br><small style="font-size:10px;color:#64748b">{{ i.emisor }}</small>{% if i.observacion %}<br><small style="font-size:10px;color:#6366f1">📝 {{ i.observacion|slice(0,40) }}</small>{% endif %}</td><td class="small text-muted">{{ i.periodo|default('-') }}</td><td class="text-end fw-bold">${{ i.total|number_format(0,',','.') }}</td>
-      <td>{% if est=='PAGADA' %}<span class="badge rounded-pill" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-size:10px">PAGADA • FINAL</span>{% elseif est=='PENDIENTE' %}<span class="badge rounded-pill" style="background:#fffbeb;color:#d97706;border:1px solid #fde68a;font-size:10px">PENDIENTE</span>{% elseif est=='EMITIDA' %}<span class="badge rounded-pill" style="background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;font-size:10px">EMITIDA</span>{% else %}<span class="badge rounded-pill" style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;font-size:10px">{{ est }}</span>{% endif %}</td>
-      <td class="text-end"><button class="btn btn-sm" style="width:32px;height:32px;border-radius:10px;background:#eef2ff;color:#6366f1" onclick="verFactura({{ i.id }})"><i class="bi bi-eye"></i></button> {% if est not in ['PAGADA','ANULADA'] %}<a href="{{ path('app_invoice_edit',{'id':i.id}) }}" class="btn btn-sm" style="width:32px;height:32px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0"><i class="bi bi-pencil"></i></a>{% endif %} {% if est!='PAGADA' and est!='ANULADA' %}<button class="btn btn-sm" style="width:32px;height:32px;border-radius:10px;background:#fef2f2;color:#ef4444" data-bs-toggle="modal" data-bs-target="#deleteModal{{ i.id }}"><i class="bi bi-trash"></i></button>{% endif %}</td></tr>
-      {% if est!='PAGADA' and est!='ANULADA' %}<div class="modal fade" id="deleteModal{{ i.id }}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content" style="border-radius:20px"><div class="modal-header border-0"><h6>Anular #{{ i.id }}</h6><button class="btn-close" data-bs-dismiss="modal"></button></div><form method="post" action="{{ path('app_invoice_delete',{'id':i.id}) }}"><div class="modal-body"><input type="hidden" name="_token" value="{{ csrf_token('delete'~i.id) }}"><div class="alert" style="background:#fef2f2;border-radius:12px;font-size:12px">Pasará a ANULADA con auditoría. Mín 10 chars.</div><textarea name="motivo" class="form-control" required minlength="10" style="border-radius:12px"></textarea></div><div class="modal-footer border-0"><button class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button><button class="btn rounded-pill" style="background:#ef4444;color:white">Anular</button></div></form></div></div></div>{% endif %}
+    {# ===================== HEADER + FILTROS ===================== #}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h4 class="mb-0">
+            Facturas
+            <span class="badge bg-light text-dark border">{{ totalResults }} resultados</span>
+        </h4>
+
+        <div class="d-flex gap-2 align-items-center">
+            {# Buscador + filtro estado - GET para mantener URL #}
+            <form method="get" id="searchForm" class="d-flex gap-2">
+                <input type="text"
+                       name="q"
+                       id="searchInput"
+                       value="{{ q }}"
+                       class="form-control form-control-sm"
+                       style="width:300px;border-radius:12px"
+                       placeholder="🔍 Buscar folio, emisor, receptor...">
+
+                <select name="estado"
+                        id="estadoFilter"
+                        class="form-select form-select-sm"
+                        style="width:160px;border-radius:12px">
+                    <option value="">Todos</option>
+                    <option value="PENDIENTE" {% if estadoFilter=='PENDIENTE' %}selected{% endif %}>PENDIENTE</option>
+                    <option value="EMITIDA" {% if estadoFilter=='EMITIDA' %}selected{% endif %}>EMITIDA</option>
+                    <option value="PAGADA" {% if estadoFilter=='PAGADA' %}selected{% endif %}>PAGADA</option>
+                    <option value="ANULADA" {% if estadoFilter=='ANULADA' %}selected{% endif %}>ANULADA</option>
+                </select>
+            </form>
+
+            {# Botones creación: manual + generador por periodos #}
+            <div class="btn-group">
+                <a href="{{ path('app_invoice_new') }}"
+                   class="btn btn-sm rounded-start-pill px-3 border"
+                   style="background:white;color:#0f172a">
+                                        + Nueva manual
+                </a>
+                <a href="{{ path('app_invoice_generator') }}"
+                   class="btn btn-sm rounded-end-pill px-3"
+                   style="background:#6366f1;color:white;font-weight:600">
+                    ⚡ Generar por periodos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {# ===================== TABLA FACTURAS ===================== #}
+    <div class="card border-0 shadow-sm rounded-4" style="border:1.5px solid #e2e8f0!important;overflow:hidden">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle" style="font-size:13px">
+                <thead style="background:#f8fafc;font-size:11px;color:#64748b">
+                    <tr>
+                        <th>#</th>
+                        <th>Folio</th>
+                        <th>Receptor</th>
+                        <th>Periodo</th>
+                        <th class="text-end">Total</th>
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="crudTbody">
+                {% for i in invoices %}
+                    {% set est = i.estado|upper %}
+                    <tr data-search="{{ i.id }} {{ i.folio }} {{ i.emisor }} {{ i.receptor }} {{ i.periodo }}"
+                        data-estado="{{ est }}"
+                        {% if est=='PAGADA' %}style="opacity:.7"{% endif %}>
+
+                        <td class="text-muted">#{{ i.id }}</td>
+
+                        <td class="fw-semibold">{{ i.folio }}</td>
+
+                        <td>
+                            <b>{{ i.receptor|default('-')|slice(0,30) }}</b><br>
+                            <small style="font-size:10px;color:#64748b">{{ i.emisor }}</small>
+                            {% if i.observacion %}
+                                <br><small style="font-size:10px;color:#6366f1">📝 {{ i.observacion|slice(0,40) }}</small>
+                            {% endif %}
+                        </td>
+
+                        <td class="small text-muted">{{ i.periodo|default('-') }}</td>
+
+                        <td class="text-end fw-bold">${{ i.total|number_format(0,',','.') }}</td>
+
+                        {# Badge estado con colores #}
+                        <td>
+                            {% if est=='PAGADA' %}
+                                <span class="badge rounded-pill" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-size:10px">PAGADA • FINAL</span>
+                            {% elseif est=='PENDIENTE' %}
+                                <span class="badge rounded-pill" style="background:#fffbeb;color:#d97706;border:1px solid #fde68a;font-size:10px">PENDIENTE</span>
+                            {% elseif est=='EMITIDA' %}
+                                <span class="badge rounded-pill" style="background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;font-size:10px">EMITIDA</span>
+                            {% else %}
+                                <span class="badge rounded-pill" style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;font-size:10px">{{ est }}</span>
+                            {% endif %}
+                        </td>
+
+                        {# Acciones: ver, editar, anular #}
+                        <td class="text-end">
+                            <button class="btn btn-sm" style="width:32px;height:32px;border-radius:10px;background:#eef2ff;color:#6366f1"
+                                    onclick="verFactura({{ i.id }})">
+                                <i class="bi bi-eye"></i>
+                            </button>
+
+                            {% if est not in ['PAGADA','ANULADA'] %}
+                                <a href="{{ path('app_invoice_edit',{'id':i.id}) }}"
+                                   class="btn btn-sm"
+                                   style="width:32px;height:32px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            {% endif %}
+
+                            {% if est!='PAGADA' and est!='ANULADA' %}
+                                <button class="btn btn-sm"
+                                        style="width:32px;height:32px;border-radius:10px;background:#fef2f2;color:#ef4444"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteModal{{ i.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Footer paginación #}
+        <div class="d-flex justify-content-between align-items-center p-3" style="background:#f8fafc;border-top:1px solid #e2e8f0">
+            <small>Página {{ page }}/{{ totalPages }} - {{ totalResults }} - 10 por página</small>
+            <div class="d-flex gap-2">
+                {% if page>1 %}
+                    <a href="{{ path('app_invoice_index',{'q':q,'estado':estadoFilter,'page':page-1}) }}"
+                       class="btn btn-sm btn-light rounded-pill border">Prev</a>
+                {% endif %}
+                {% if page<totalPages %}
+                    <a href="{{ path('app_invoice_index',{'q':q,'estado':estadoFilter,'page':page+1}) }}"
+                       class="btn btn-sm rounded-pill" style="background:#6366f1;color:white">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ===================== MODALES ANULAR - FUERA DE LA TABLA =====================
+       FIX: antes los tenías dentro del <tbody> (HTML inválido que rompe tabla)
+       Ahora fuera, al final del container, 1 modal por factura no pagada/anulada
+    #}
+    {% for i in invoices %}
+        {% set est = i.estado|upper %}
+        {% if est!='PAGADA' and est!='ANULADA' %}
+            <div class="modal fade" id="deleteModal{{ i.id }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="border-radius:20px">
+                        <div class="modal-header border-0">
+                            <h6>Anular #{{ i.id }}</h6>
+                            <button class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="post" action="{{ path('app_invoice_delete',{'id':i.id}) }}">
+                            <div class="modal-body">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete'~i.id) }}">
+                                <div class="alert" style="background:#fef2f2;border-radius:12px;font-size:12px">
+                                    Pasará a ANULADA con auditoría. Mín 10 chars.
+                                </div>
+                                <textarea name="motivo"
+                                          class="form-control"
+                                          required
+                                          minlength="10"
+                                          style="border-radius:12px"
+                                          placeholder="Motivo de anulación..."></textarea>
+                            </div>
+                            <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                                <button class="btn rounded-pill" style="background:#ef4444;color:white">Anular</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
     {% endfor %}
-    </tbody></table></div>
-    <div class="d-flex justify-content-between align-items-center p-3" style="background:#f8fafc;border-top:1px solid #e2e8f0"><small>Página {{ page }}/{{ totalPages }} - {{ totalResults }} - 10 por página</small><div class="d-flex gap-2">{% if page>1 %}<a href="{{ path('app_invoice_index',{'q':q,'estado':estadoFilter,'page':page-1}) }}" class="btn btn-sm btn-light rounded-pill border">Prev</a>{% endif %}{% if page<totalPages %}<a href="{{ path('app_invoice_index',{'q':q,'estado':estadoFilter,'page':page+1}) }}" class="btn btn-sm rounded-pill" style="background:#6366f1;color:white">Next</a>{% endif %}</div></div>
-  </div>
+
 </div>
-<script>function verFactura(id){window.location='/invoices/'+id;}</script>
+
+<script>
+    /**
+          * Ver detalle factura - redirect simple
+          * Podrías cambiar a openCrudModal('/invoices/'+id) si quieres modal
+     */
+    function verFactura(id){
+        window.location='/invoices/'+id;
+    }
+
+    // Filtro auto-submit al cambiar estado
+    document.getElementById('estadoFilter')?.addEventListener('change', ()=>{
+        document.getElementById('searchForm').submit();
+    });
+</script>
 {% endblock %}

@@ -19,7 +19,7 @@
       <thead><tr><th>Tipo</th><th>Concepto</th><th class="text-end">Monto</th></tr></thead>
       <tbody>
         {% for item in settlement.items %}
-          <tr><td><span class="badge {% if item.tipo == 'DESCUENTO' %}bg-danger{% else %}bg-primary{% endif %}" style="font-size:10px">{{ item.tipo }}</span></td><td>{{ item.concepto }}</td><td class="text-end fw-bold">${{ item.monto|number_format(0,',','.') }}</td></tr>
+          <tr><td><span class="badge {% if item.tipo == 'DESCUENTO' %}bg-danger{% else %}bg-primary{% endif %}" style="font-size:10px">{{ item.tipo }}</span></td><td>{{ item.descripcion }}</td><td class="text-end fw-bold">${{ item.monto|number_format(0,',','.') }}</td></tr>
         {% else %}
           <tr><td colspan="3" class="text-center py-3" style="color:#94a3b8">Sin items</td></tr>
         {% endfor %}

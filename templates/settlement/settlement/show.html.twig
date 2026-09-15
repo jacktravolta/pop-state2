@@ -1,6 +1,180 @@
+{# ============================================================================
+  POP ESTATE - settlement/show.html.twig
+  Detalle Liquidación #{{ settlement.id }}
+    - Header con volver + título + periodo/estado
+    - Acciones: Recalcular / Pagar / Anular (con CSRF y confirm)
+    - Cargos: tabla items (concepto fallback descripcion)
+    - Detalle lateral: estado, propiedad, totales
+  ============================================================================ #}
 {% extends 'base.html.twig' %}
+
 {% block title %}Liquidación #{{ settlement.id }}{% endblock %}
+
 {% block body %}
-<div class="d-flex justify-content-between align-items-center mb-4"><div><a href="{{ path('app_settlement_index') }}" class="btn btn-sm btn-light mb-2"><i class="bi bi-arrow-left"></i> Liquidaciones</a><h3 class="fw-bold mb-0">Liquidación #{{ settlement.id }}</h3><small class="text-muted">{{ settlement.periodo|default('') }} • {{ settlement.estado }}</small></div><div class="d-flex gap-2"><form method="post" action="{{ path('app_settlement_recalcular', {id: settlement.id}) }}"><button class="btn btn-light"><i class="bi bi-calculator"></i> Recalcular</button></form><form method="post" action="{{ path('app_settlement_pagar', {id: settlement.id}) }}"><button class="btn btn-success"><i class="bi bi-check-circle"></i> Pagar</button></form><form method="post" action="{{ path('app_settlement_anular', {id: settlement.id}) }}"><button class="btn btn-outline-danger"><i class="bi bi-x-circle"></i> Anular</button></form></div></div>
-<div class="row g-3"><div class="col-lg-8"><div class="card-modern"><div class="card-modern-header"><h5 class="mb-0">Cargos</h5></div><div class="table-responsive"><table class="table table-modern"><thead><tr><th>Concepto</th><th class="text-end">Monto</th></tr></thead><tbody>{% for item in settlement.items|default([]) %}<tr><td>{{ item.concepto|default(item.descripcion) }}</td><td class="text-end">${{ item.monto|number_format(0,',','.') }}</td></tr>{% else %}<tr><td colspan="2" class="text-center py-3 text-muted">Sin cargos</td></tr>{% endfor %}</tbody><tfoot><tr><th>Total</th><th class="text-end">${{ settlement.total|default(0)|number_format(0,',','.') }}</th></tr></tfoot></table></div></div></div><div class="col-lg-4"><div class="card-modern p-4"><h5>Detalle</h5><div class="mt-3"><label class="small text-muted">Estado</label><div><span class="badge bg-success-soft text-success">{{ settlement.estado }}</span></div></div><div class="mt-3"><label class="small text-muted">Propiedad</label><div class="fw-semibold">{{ settlement.property.address|default('—') }}</div></div></div></div></div>
+
+{# -------------------- HEADER -------------------- #}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <a href="{{ path('app_settlement_index') }}" class="btn btn-sm btn-light rounded-pill mb-2">
+            <i class="bi bi-arrow-left"></i> Liquidaciones
+        </a>
+        <h3 class="fw-bold mb-0">Liquidación #{{ settlement.id }}</h3>
+        <small class="text-muted">
+            {{ settlement.periodo|default(settlement.fechaInicio ? settlement.fechaInicio|date('m/Y') : '') }} • 
+            <span class="badge 
+                {% if settlement.estado == 'PAGADA' %}bg-success-subtle text-success border border-success-subtle
+                {% elseif settlement.estado == 'ANULADA' %}bg-danger-subtle text-danger border border-danger-subtle
+                {% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}"
+                style="font-size:11px">
+                {{ settlement.estado }}
+            </span>
+        </small>
+    </div>
+
+    {# Acciones principales - solo si no está anulada #}
+    <div class="d-flex gap-2 flex-wrap">
+        {% if settlement.estado != 'ANULADA' %}
+            {# Recalcular #}
+            <form method="post" action="{{ path('app_settlement_recalcular', {id: settlement.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('recalcular' ~ settlement.id) }}">
+                <button class="btn btn-light rounded-pill border" title="Recalcula totales desde items">
+                    <i class="bi bi-calculator"></i> Recalcular
+                </button>
+            </form>
+
+            {# Pagar - solo si PENDIENTE #}
+            {% if settlement.estado == 'PENDIENTE' %}
+                <form method="post" action="{{ path('app_settlement_pagar', {id: settlement.id}) }}"
+                      onsubmit="return confirm('¿Confirmar pago de ${{ settlement.total|default(0)|number_format(0,',','.') }}?')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('pagar' ~ settlement.id) }}">
+                    <button class="btn btn-success rounded-pill">
+                        <i class="bi bi-cash-stack"></i> Pagar
+                    </button>
+                </form>
+            {% endif %}
+
+            {# Anular #}
+            <form method="post" action="{{ path('app_settlement_anular', {id: settlement.id}) }}"
+                  onsubmit="return confirm('¿Seguro que quieres ANULAR? Esta acción queda en auditoría.')">
+                <input type="hidden" name="_token" value="{{ csrf_token('anular' ~ settlement.id) }}">
+                <button class="btn btn-outline-danger rounded-pill">
+                    <i class="bi bi-x-circle"></i> Anular
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3">
+
+    {# -------------------- COL IZQ: CARGOS -------------------- #}
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4" style="border:1.5px solid #e2e8f0!important;overflow:hidden">
+            <div class="p-3" style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
+                <h5 class="mb-0 fw-bold" style="font-size:14px">Cargos / Items</h5>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle" style="font-size:13px">
+                    <thead style="background:#f8fafc;font-size:11px;color:#64748b">
+                        <tr>
+                            <th style="padding:12px 16px">Concepto</th>
+                            <th class="text-end" style="padding-right:16px">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in settlement.items|default([]) %}
+                        <tr>
+                            {# FIX: tu entity usa descripcion, no concepto #}
+                            <td style="padding:12px 16px">
+                                {{ item.descripcion|default(item.concepto|default('—')) }}
+                                {% if item.tipo is defined %}
+                                    <small class="badge ms-2 {% if item.tipo == 'DESCUENTO' %}bg-danger-subtle text-danger{% else %}bg-primary-subtle text-primary{% endif %}" style="font-size:10px">{{ item.tipo }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-semibold" style="padding-right:16px">
+                                ${{ item.monto|number_format(0,',','.') }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center py-4 text-muted">Sin cargos</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                    <tfoot style="background:#f8fafc;border-top:1.5px solid #e2e8f0">
+                        <tr>
+                            <th style="padding:14px 16px">Total liquidación</th>
+                            <th class="text-end" style="padding-right:16px;color:#6366f1">
+                                ${{ settlement.total|default(0)|number_format(0,',','.') }}
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# -------------------- COL DER: DETALLE -------------------- #}
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4" style="border:1.5px solid #e2e8f0!important">
+            <h5 class="fw-bold" style="font-size:14px">Detalle</h5>
+
+            <div class="mt-3">
+                <label class="small text-muted" style="font-size:11px">Estado</label>
+                <div class="mt-1">
+                    <span class="badge rounded-pill px-3 py-2
+                        {% if settlement.estado == 'PAGADA' %}bg-success-subtle text-success border border-success-subtle
+                        {% elseif settlement.estado == 'ANULADA' %}bg-danger-subtle text-danger border border-danger-subtle
+                        {% else %}bg-warning-subtle text-warning-emphasis border border-warning-subtle{% endif %}">
+                        {{ settlement.estado }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <label class="small text-muted" style="font-size:11px">Propiedad</label>
+                <div class="fw-semibold" style="font-size:13px">{{ settlement.property.address|default(settlement.property.direccion|default('—')) }}</div>
+            </div>
+
+            {% if settlement.totalCargo is defined %}
+            <div class="mt-3 d-flex justify-content-between">
+                <span class="small text-muted">Cargo</span>
+                <span class="fw-semibold">${{ settlement.totalCargo|number_format(0,',','.') }}</span>
+            </div>
+            {% endif %}
+
+            {% if settlement.totalDescuento is defined %}
+            <div class="mt-2 d-flex justify-content-between">
+                <span class="small text-muted">Descuento</span>
+                <span class="fw-semibold text-danger">-${{ settlement.totalDescuento|number_format(0,',','.') }}</span>
+            </div>
+            {% endif %}
+
+            <hr class="my-3">
+
+            <div class="d-flex justify-content-between">
+                <span class="small fw-bold">Total</span>
+                <span class="fw-bold" style="color:#6366f1">${{ settlement.total|default(0)|number_format(0,',','.') }}</span>
+            </div>
+
+            {% if settlement.observacion is defined and settlement.observacion %}
+            <div class="mt-3">
+                <label class="small text-muted" style="font-size:11px">Observación</label>
+                <div class="alert mt-1" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;font-size:12px">
+                    {{ settlement.observacion }}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="mt-4 d-grid gap-2">
+                <a href="{{ path('app_settlement_pdf', {id: settlement.id}) }}" target="_blank" class="btn btn-dark rounded-pill">
+                    <i class="bi bi-file-earmark-pdf"></i> Ver PDF
+                </a>
+                <a href="{{ path('app_settlement_index') }}" class="btn btn-light rounded-pill border">Volver</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

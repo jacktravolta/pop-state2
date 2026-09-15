@@ -1,116 +1,196 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Pop Estate{% endblock %}</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{font-family:Inter,system-ui} body{background:#f8fafc; color:#111827; margin:0}
-.sidebar{width:260px; min-height:100vh; background:#fff; border-right:1px solid #eef2f7; position:fixed; left:0; top:0; padding:20px 14px}
-.sidebar-brand{font-weight:800; display:flex; gap:10px; align-items:center; padding:0 10px 18px}
-.sidebar-brand i{width:36px; height:36px; background:#6366f1; color:#fff; border-radius:12px; display:flex; align-items:center; justify-content:center}
-.nav-section{font-size:10px; font-weight:800; color:#9ca3af; padding:16px 10px 6px; letter-spacing:.08em}
-.nav-link{color:#6b7280; font-size:13px; padding:9px 12px; border-radius:10px; display:flex; gap:10px; align-items:center}
-.nav-link:hover{background:#eef2ff; color:#6366f1}.nav-link.active{background:#6366f1; color:#fff; box-shadow:0 4px 14px rgba(99,102,241,.3)}
-.main{margin-left:260px; padding:28px}
-.card{border:1px solid #eef2f7; border-radius:16px}
-.form-control,.form-select{border-radius:12px !important; border:1px solid #e5e7eb !important; height:44px !important; font-size:13px !important; background:#fff !important; box-shadow:none !important}
-.form-control:focus{border-color:#6366f1 !important; box-shadow:0 0 0 3px rgba(99,102,241,.15) !important}
-.modal-content{border-radius:24px; border:1px solid #eef2f7}
-.btn{border-radius:12px}
-</style>{% block stylesheets %}{% endblock %}</head><body>
+{# ============================================================================
+  POP ESTATE - base.html.twig v2.0 ORDENADO Y DOCUMENTADO
+  Layout principal Symfony 6 / Twig
+    - Sidebar fijo 260px + Main con margin-left
+    - Bootstrap 5.3.3 + Icons + Inter
+    - Modal CRUD universal (fetch)
+    - Modal Confirm FIX POST + CSRF
+  ============================================================================ #}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Pop Estate{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+                * { font-family: Inter, system-ui, sans-serif; }
+        body { background: #f8fafc; color: #111827; margin: 0; }
+
+        /* SIDEBAR 260px fijo */
+        .sidebar {
+            width: 260px; min-height: 100vh; background: #fff;
+            border-right: 1px solid #eef2f7; position: fixed;
+            left: 0; top: 0; padding: 20px 14px; z-index: 100;
+        }
+        .sidebar-brand {
+            font-weight: 800; display: flex; gap: 10px;
+            align-items: center; padding: 0 10px 18px;
+        }
+        .sidebar-brand i {
+            width: 36px; height: 36px; background: #6366f1; color: #fff;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        }
+        .nav-section {
+            font-size: 10px; font-weight: 800; color: #9ca3af;
+            padding: 16px 10px 6px; letter-spacing: .08em; text-transform: uppercase;
+        }
+        .nav-link {
+            color: #6b7280; font-size: 13px; padding: 9px 12px;
+            border-radius: 10px; display: flex; gap: 10px; align-items: center; transition: .2s;
+        }
+        .nav-link:hover { background: #eef2ff; color: #6366f1; }
+        .nav-link.active { background: #6366f1; color: #fff; box-shadow: 0 4px 14px rgba(99,102,241,.3); }
+
+        .main { margin-left: 260px; padding: 28px; min-height: 100vh; }
+        .card { border: 1px solid #eef2f7; border-radius: 16px; }
+        .btn { border-radius: 12px; }
+
+        .form-control,.form-select {
+            border-radius: 12px !important; border: 1px solid #e5e7eb !important;
+            height: 44px !important; font-size: 13px !important; background: #fff !important; box-shadow: none !important;
+        }
+        .form-control:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 3px rgba(99,102,241,.15) !important; }
+        .form-label { margin-bottom: 4px; font-size: 12px; font-weight: 600; }
+
+        .invalid-feedback { display: block !important; color: #ef4444 !important; font-size: 11px; margin-top: 4px; }
+        .is-invalid { border-color: #ef4444 !important; background: #fef2f2 !important; }
+
+        .modal-content { border-radius: 24px; border: 1px solid #eef2f7; }
+    </style>
+    {% block stylesheets %}{% endblock %}
+</head>
+<body>
+
 {% if app.user %}
-<div class="sidebar"><div class="sidebar-brand"><i class="bi bi-buildings"></i> POP ESTATE</div>
-<div class="nav-section">Principal</div><nav class="nav flex-column">
-<a class="nav-link {% if 'dashboard' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_dashboard') }}"><i class="bi bi-grid-1x2"></i> Dashboard</a>
-<a class="nav-link {% if 'property' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_property_index') }}"><i class="bi bi-houses"></i> Propiedades</a>
-<a class="nav-link {% if 'owner' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_owner_index') }}"><i class="bi bi-people"></i> Propietarios</a>
-<a class="nav-link {% if 'company' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_company_index') }}"><i class="bi bi-building"></i> Empresas</a></nav>
-<div class="nav-section">Finanzas</div><nav class="nav flex-column">
-<a class="nav-link {% if 'invoice' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_invoice_index') }}"><i class="bi bi-file-invoice"></i> Facturas</a>
-<a class="nav-link {% if 'settlement' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_settlement_index') }}"><i class="bi bi-receipt"></i> Liquidaciones</a>
-<a class="nav-link {% if 'bi' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_bi_index') }}"><i class="bi bi-bar-chart"></i> BI</a></nav>
-<div style="position:absolute; bottom:20px; left:14px; right:14px"><a class="nav-link" href="{{ path('app_logout') }}"><i class="bi bi-box-arrow-left"></i> Salir</a></div></div>
-<div class="main">{% for label, messages in app.flashes %}{% for message in messages %}<div class="alert alert-{{ label }} py-2" style="border-radius:12px; font-size:13px">{{ message }}</div>{% endfor %}{% endfor %}{% block body %}{% endblock %}</div>
-<div class="modal fade" id="crudModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><div class="modal-body p-0" id="crudModalBody"></div></div></div></div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-let lastCrudUrl = null;
-const modalEl = document.getElementById('crudModal');
-const modalBody = document.getElementById('crudModalBody');
-let inst = null;
-function getModal(){ if(!inst) inst=new bootstrap.Modal(modalEl); return inst; }
-function execScripts(c){ c.querySelectorAll('script').forEach(o=>{ const s=document.createElement('script'); s.textContent=o.textContent; o.remove(); c.appendChild(s); }); }
-window.openCrudModal = async function(url){
-  lastCrudUrl = url;
-  const r = await fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}});
-  const h = await r.text();
-  modalBody.innerHTML = h;
-  execScripts(modalBody);
-  getModal().show();
-};
-modalEl.addEventListener('hidden.bs.modal', ()=>{ modalBody.innerHTML=''; lastCrudUrl=null; });
 
-// FIX CIERRE UNIVERSAL - todos los forms dentro del modal
-document.addEventListener('submit', async function(e){
-  const form = e.target;
-  if (!modalBody.contains(form)) return;
-  e.preventDefault();
-  const fd = new FormData(form);
-  let action = form.action || lastCrudUrl;
-  if (!action || action === window.location.href) action = lastCrudUrl;
-  
-  const btn = form.querySelector('button[type="submit"]');
-  if (btn){ btn.disabled=true; btn.innerHTML='Guardando...'; }
+    <div class="sidebar">
+        <div class="sidebar-brand"><i class="bi bi-buildings"></i> POP ESTATE</div>
 
-  try {
-    const res = await fetch(action, {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}});
-    const txt = await res.text();
-    // Si hay errores de validación, Symfony devuelve el form con is-invalid o mensajes
-    const hasErrors = txt.includes('is-invalid') || txt.includes('invalid-feedback') || (txt.includes('<form') && txt.includes('form-control') && txt.toLowerCase().includes('required'));
-    
-    if (hasErrors) {
-      // Re-renderiza el form con errores dentro del modal
-      modalBody.innerHTML = txt;
-      execScripts(modalBody);
-      if (btn){ btn.disabled=false; btn.innerHTML='Crear'; }
-    } else {
-      // ÉXITO: cierra modal y recarga padre
-      getModal().hide();
-      setTimeout(()=>{ location.reload(); }, 250);
-    }
-  } catch(err){
-    console.error(err);
-    getModal().hide();
-    location.reload();
-  }
-});
-</script>{% else %}{% block login %}{% endblock %}{% endif %}{% block javascripts %}{% endblock %}{# === MODAL CONFIRM FIX POST + CSRF === #}
-<div class="modal fade" id="confirmModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius:20px">
-      <div class="modal-header border-0"><h6 id="confirmModalTitle" class="fw-bold"></h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body"><p id="confirmModalMsg" style="font-size:13px;color:#6b7280"></p></div>
-      <div class="modal-footer border-0">
-        <button class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-        <form id="confirmModalForm" method="POST" style="display:inline">
-          <input type="hidden" name="_token" id="confirmModalToken" value="">
-          <button id="confirmModalBtn" type="submit" class="btn rounded-pill text-white" style="background:#ef4444">Eliminar</button>
-        </form>
-      </div>
+        <div class="nav-section">Principal</div>
+        <nav class="nav flex-column">
+            <a class="nav-link {% if 'dashboard' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_dashboard') }}"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+            <a class="nav-link {% if 'property' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_property_index') }}"><i class="bi bi-houses"></i> Propiedades</a>
+            <a class="nav-link {% if 'owner' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_owner_index') }}"><i class="bi bi-people"></i> Propietarios</a>
+            <a class="nav-link {% if 'company' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_company_index') }}"><i class="bi bi-building"></i> Empresas</a>
+        </nav>
+
+        <div class="nav-section">Finanzas</div>
+        <nav class="nav flex-column">
+            <a class="nav-link {% if 'invoice' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_invoice_index') }}"><i class="bi bi-file-invoice"></i> Facturas</a>
+            <a class="nav-link {% if 'settlement' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_settlement_index') }}"><i class="bi bi-receipt"></i> Liquidaciones</a>
+            <a class="nav-link {% if 'bi' in app.request.get('_route') %}active{% endif %}" href="{{ path('app_bi_index') }}"><i class="bi bi-bar-chart"></i> BI</a>
+        </nav>
+
+        <div style="position:absolute; bottom:20px; left:14px; right:14px">
+            <a class="nav-link" href="{{ path('app_logout') }}"><i class="bi bi-box-arrow-left"></i> Salir</a>
+        </div>
     </div>
-  </div>
-</div>
-<script>
-function openConfirmModal(title, msg, type, btnText, url, token){
-  document.getElementById('confirmModalTitle').innerText = title;
-  document.getElementById('confirmModalMsg').innerText = msg;
-  document.getElementById('confirmModalBtn').innerText = btnText || 'Eliminar';
-  document.getElementById('confirmModalForm').action = url || '#';
-  if(token){ document.getElementById('confirmModalToken').value = token; }
-  document.getElementById('confirmModalBtn').style.background = type==='danger' ? '#ef4444' : type==='success' ? '#10b981' : '#6366f1';
-  new bootstrap.Modal(document.getElementById('confirmModal')).show();
-}
-</script>
-</body></html>
-<style>
-.invalid-feedback{display:block !important;color:#ef4444 !important;font-size:11px;margin-top:4px}
-.is-invalid{border-color:#ef4444 !important;background:#fef2f2 !important}
-.form-label{margin-bottom:4px}
-</style>
+
+    <div class="main">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="alert alert-{{ label }} py-2" style="border-radius:12px; font-size:13px">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+        {% block body %}{% endblock %}
+    </div>
+
+    <!-- MODAL CRUD -->
+    <div class="modal fade" id="crudModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content"><div class="modal-body p-0" id="crudModalBody"></div></div></div>
+    </div>
+
+    <!-- MODAL CONFIRM POST + CSRF -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:20px">
+                <div class="modal-header border-0"><h6 id="confirmModalTitle" class="fw-bold"></h6><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><p id="confirmModalMsg" style="font-size:13px;color:#6b7280"></p></div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="confirmModalForm" method="POST" style="display:inline">
+                        <input type="hidden" name="_token" id="confirmModalToken" value="">
+                        <button id="confirmModalBtn" type="submit" class="btn rounded-pill text-white" style="background:#ef4444">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // --- CRUD MODAL ---
+        let lastCrudUrl = null;
+        const modalEl = document.getElementById('crudModal');
+        const modalBody = document.getElementById('crudModalBody');
+        let inst = null;
+        function getModal(){ if(!inst) inst=new bootstrap.Modal(modalEl); return inst; }
+        function execScripts(c){ c.querySelectorAll('script').forEach(o=>{ const s=document.createElement('script'); s.textContent=o.textContent; o.remove(); c.appendChild(s); }); }
+
+        // Abre modal con form via fetch
+        window.openCrudModal = async function(url){
+            lastCrudUrl = url;
+            const r = await fetch(url,{headers:{'X-Requested-With':'XMLHttpRequest'}});
+            const h = await r.text();
+            modalBody.innerHTML = h;
+            execScripts(modalBody);
+            getModal().show();
+        };
+        modalEl.addEventListener('hidden.bs.modal', ()=>{ modalBody.innerHTML=''; lastCrudUrl=null; });
+
+        // Intercepta submit dentro del modal: si hay errores lo re-renderiza, si no cierra y recarga
+        document.addEventListener('submit', async function(e){
+            const form = e.target;
+            if (!modalBody.contains(form)) return;
+            e.preventDefault();
+            const fd = new FormData(form);
+            let action = form.action || lastCrudUrl;
+            const btn = form.querySelector('button[type="submit"]');
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn){ btn.disabled=true; btn.innerHTML='Guardando...'; }
+            try {
+                const res = await fetch(action, {method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}});
+                const txt = await res.text();
+                const hasErrors = txt.includes('is-invalid') || txt.includes('invalid-feedback');
+                if (hasErrors) {
+                    modalBody.innerHTML = txt;
+                    execScripts(modalBody);
+                    if (btn){ btn.disabled=false; btn.innerHTML=originalText || 'Crear'; }
+                } else {
+                    getModal().hide();
+                    setTimeout(()=>{ location.reload(); }, 250);
+                }
+            } catch(err){
+                console.error(err);
+                getModal().hide();
+                location.reload();
+            }
+        });
+
+        // --- CONFIRM MODAL ---
+        function openConfirmModal(title, msg, type, btnText, url, token){
+            document.getElementById('confirmModalTitle').innerText = title;
+            document.getElementById('confirmModalMsg').innerText = msg;
+            document.getElementById('confirmModalBtn').innerText = btnText || 'Eliminar';
+            document.getElementById('confirmModalForm').action = url || '#';
+            if(token){ document.getElementById('confirmModalToken').value = token; }
+            document.getElementById('confirmModalBtn').style.background = type==='danger' ? '#ef4444' : type==='success' ? '#10b981' : '#6366f1';
+            new bootstrap.Modal(document.getElementById('confirmModal')).show();
+        }
+    </script>
+
+{% else %}
+    {% block login %}{% endblock %}
+{% endif %}
+
+{% block javascripts %}{% endblock %}
+<script src="http://localhost:8000/widget/ab98c363-cf8a-4356-9571-7c4653d4fffa.js"></script>
+
+</body>
+</html>

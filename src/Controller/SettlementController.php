@@ -66,6 +66,36 @@ class SettlementController extends AbstractController
         return $this->render('settlement/show.html.twig', ['settlement'=>$settlement]);
     }
 
+
+    #[Route('/{id}/pagar', name: 'app_settlement_pagar', requirements: ['id'=>'\d+'], methods: ['POST'])]
+    public function pagar($id, EntityManagerInterface $entityManager): Response
+    {
+
+        // 1. Obtener la liquidación
+        $settlement = $entityManager->getRepository(Settlement::class)->find($id);
+
+        if (!$settlement) {
+            throw $this->createNotFoundException('Liquidación no encontrada');
+        }
+
+        // 2. Cambiar el estado a PAGADA
+        $settlement->setEstado('PAGADA');
+
+        // 3. Guardar los cambios
+        $entityManager->persist($settlement);
+        $entityManager->flush();
+
+
+        // 4. Redirigir a la lista de liquidaciones o mostrar un mensaje
+
+        $this->addFlash('success','Liquidación #'.$settlement->getId().' PAGADA');
+        return $this->redirectToRoute('app_settlement_index');
+
+
+    }
+
+
+
     #[Route('/{id}/edit', name: 'app_settlement_edit', requirements: ['id'=>'\d+'], methods: ['GET','POST'])]
     public function edit(Request $request, Settlement $s, EntityManagerInterface $em, SettlementRepository $repo): Response
     {
