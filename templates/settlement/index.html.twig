@@ -175,22 +175,7 @@
                                     <i class="bi bi-eye"></i>
                                 </a>
 
-                                {# ----------------- BOTÓN PAGAR CON MODAL CONFIRMACIÓN ----------------- #}
-                                {% if s.estado == 'PENDIENTE' %}
-                                    <button class="btn btn-sm"
-                                            style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0"
-                                            title="Pagar liquidación #{{ s.id }}"
-                                            onclick="openConfirmModal(
-                                                'Pagar liquidación #{{ s.id }}',
-                                                '¿Seguro que quieres marcar como PAGADA la liquidación de {{ s.property.direccion|e('js') }} por ${{ s.total|number_format(0,',','.') }}?',
-                                                'success',
-                                                'Sí, pagar',
-                                                '{{ path('app_settlement_pagar', {id: s.id}) }}',
-                                                '{{ csrf_token('pagar' ~ s.id) }}'
-                                            )">
-                                        <i class="bi bi-cash-stack"></i>
-                                    </button>
-                                {% endif %}
+
 
                                 {# Editar solo si PENDIENTE, si no candado #}
                                 {% if s.estado == 'PENDIENTE' %}
