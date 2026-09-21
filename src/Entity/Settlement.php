@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Entity;
 
 use App\Repository\SettlementRepository;
@@ -6,9 +7,11 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: SettlementRepository::class)]
+#[UniqueEntity(fields: ['property', 'fechaInicio', 'fechaTermino'], message: 'Ya existe una liquidación para esta propiedad en este período')]
 class Settlement
 {
     #[ORM\Id]
@@ -34,6 +37,9 @@ class Settlement
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $observacion = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $motivoAnulacion = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2)]
     private string $totalCargo = '0.00';
@@ -78,6 +84,8 @@ class Settlement
     public function setEstado(string $estado): static { $this->estado = $estado; return $this; }
     public function getObservacion(): ?string { return $this->observacion; }
     public function setObservacion(?string $observacion): static { $this->observacion = $observacion; return $this; }
+    public function getMotivoAnulacion(): ?string { return $this->motivoAnulacion; }
+    public function setMotivoAnulacion(?string $motivoAnulacion): static { $this->motivoAnulacion = $motivoAnulacion; return $this; }
     public function getTotalCargo(): string { return $this->totalCargo; }
     public function setTotalCargo(string $totalCargo): static { $this->totalCargo = $totalCargo; return $this; }
     public function getTotalDescuento(): string { return $this->totalDescuento; }

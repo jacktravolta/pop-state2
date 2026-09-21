@@ -1,6 +1,6 @@
 PROJECT=pop-estate
 APP=app
-DB=database
+DB=db
 
 up:
 	docker compose up -d --build

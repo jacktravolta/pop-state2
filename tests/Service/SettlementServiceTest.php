@@ -13,7 +13,7 @@ class SettlementServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $em = $this->createMock(EntityManagerInterface::class);
+        $em = $this->createStub(EntityManagerInterface::class);
         $this->service = new SettlementService($em, 0.19);
     }
 

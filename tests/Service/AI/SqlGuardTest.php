@@ -2,6 +2,7 @@
 namespace App\Tests\Service\AI;
 
 use App\Service\AI\SqlGuard;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class SqlGuardTest extends TestCase
@@ -13,9 +14,7 @@ class SqlGuardTest extends TestCase
         $this->guard = new SqlGuard();
     }
 
-    /**
-     * @dataProvider safeSqlProvider
-     */
+    #[DataProvider('safeSqlProvider')]
     public function testValidateAcceptsSafeSelects(string $sql): void
     {
         $this->assertTrue($this->guard->validate($sql), "SQL '$sql' debería ser seguro");
@@ -32,9 +31,7 @@ class SqlGuardTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider dangerousSqlProvider
-     */
+    #[DataProvider('dangerousSqlProvider')]
     public function testValidateRejectsDangerousSql(string $sql): void
     {
         $this->assertFalse($this->guard->validate($sql), "SQL '$sql' debería ser bloqueado");

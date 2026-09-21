@@ -184,13 +184,14 @@
             new bootstrap.Modal(document.getElementById('confirmModal')).show();
         }
     </script>
-
+ 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script async src="http://localhost:8000/widget/d0bb5e65-d401-4533-8735-01d47afe9dae.js"></script>
+ 
 {% else %}
     {% block login %}{% endblock %}
 {% endif %}
 
-{% block javascripts %}{% endblock %}
-<script src="http://localhost:8000/widget/ab98c363-cf8a-4356-9571-7c4653d4fffa.js"></script>
 
 </body>
 </html>

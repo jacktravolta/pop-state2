@@ -1,9 +1,10 @@
 <?php
 namespace App\Entity;
 
+use App\Repository\InvoiceSettlementRepository;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: InvoiceSettlementRepository::class)]
 #[ORM\Table(name: 'invoice_settlement')]
 #[ORM\UniqueConstraint(name: 'uniq_invoice_settlement', columns: ['invoice_id', 'settlement_id'])]
 class InvoiceSettlement

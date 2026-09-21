@@ -133,8 +133,10 @@ class SettlementController extends AbstractController
             $this->addFlash('danger','Observación mínima 10 caracteres para anular');
             return $this->redirectToRoute('app_settlement_index');
         }
+        $audit = sprintf('%s | por %s el %s', $motivo, $this->getUser()?->getEmail() ?? 'sistema', (new \DateTimeImmutable())->format('d/m/Y H:i'));
         $s->setEstado('ANULADA');
-        $s->setObservacion($motivo);
+        $s->setMotivoAnulacion($audit);
+        $s->setObservacion($audit);
         $em->flush();
         $this->addFlash('success','Liquidación #'.$s->getId().' ANULADA');
         return $this->redirectToRoute('app_settlement_index');

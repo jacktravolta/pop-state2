@@ -86,23 +86,63 @@ class SeedSettlementsCommand extends Command
             $props = $this->em->getRepository(Property::class)->findAll();
         }
 
-        // === 2. 148 PAGADA dic 2025 ===
+        // === 2. N PAGADA dic 2025 (respeta Unique property+fechas + totales coherentes) ===
         $io->info("Sembrando $count PAGADA dic 2025...");
-        for ($i=1;$i<=$count;$i++) {
+        $used = [];
+        $created = 0;
+        $attempts = 0;
+        // Marca las combinaciones ya existentes para no violar el UniqueEntity.
+        foreach ($this->em->getRepository(Settlement::class)->findAll() as $existing) {
+            $used[$existing->getProperty()->getId().'_'.$existing->getFechaInicio()->format('Y-m-d').'_'.$existing->getFechaTermino()->format('Y-m-d')] = true;
+        }
+        while ($created < $count && $attempts < $count * 20) {
+            $attempts++;
+            $prop = $props[array_rand($props)];
+            // Varía los días dentro de diciembre para que property+fechas sea único.
+            $startDay = 1 + (($created + $attempts) % 26);
+            $endDay = min(31, $startDay + 2 + ($created % 3));
+            $key = $prop->getId()."_2025-12-".str_pad((string) $startDay, 2, '0', STR_PAD_LEFT)."_2025-12-".str_pad((string) $endDay, 2, '0', STR_PAD_LEFT);
+            if (isset($used[$key])) {
+                continue;
+            }
+            $used[$key] = true;
             $s = new Settlement();
-            $s->setProperty($props[array_rand($props)]);
-            $s->setFechaInicio(new \DateTime('2025-12-01'));
-            $s->setFechaTermino(new \DateTime('2025-12-31'));
-            $s->setTotal(rand(300000, 1200000));
+            $s->setProperty($prop);
+            $s->setFechaInicio(new \DateTime(sprintf('2025-12-%02d', $startDay)));
+            $s->setFechaTermino(new \DateTime(sprintf('2025-12-%02d', $endDay)));
+            $cargo = rand(300000, 1200000);
+            $descuento = rand(0, (int) ($cargo * 0.2));
+            $neto = $cargo - $descuento;
+            $iva = (int) round($neto * 0.19);
+            $itemCargo = new \App\Entity\SettlementItem();
+            $itemCargo->setTipo('CARGO');
+            $itemCargo->setDescripcion('Arriendo dic 2025');
+            $itemCargo->setMonto((string) $cargo);
+            $s->addItem($itemCargo);
+            if ($descuento > 0) {
+                $itemDesc = new \App\Entity\SettlementItem();
+                $itemDesc->setTipo('DESCUENTO');
+                $itemDesc->setDescripcion('Descuento seed');
+                $itemDesc->setMonto((string) $descuento);
+                $s->addItem($itemDesc);
+            }
+            $s->setTotalCargo((string) $cargo);
+            $s->setTotalDescuento((string) $descuento);
+            $s->setTotalNeto((string) $neto);
+            $s->setIva((string) $iva);
+            $s->setTotal((string) ($neto + $iva));
             $s->setEstado('PAGADA');
-            $s->setObservacion("Seed PAGADA #$i dic 2025");
-            if (method_exists($s, 'setCreatedAt')) $s->setCreatedAt(new \DateTimeImmutable());
-            if (method_exists($s, 'setCreatedBy')) $s->setCreatedBy($users['admin@pop.cl']);
+            $s->setObservacion('Seed PAGADA #'.($created + 1).' dic 2025');
+            $s->setCreatedAt(new \DateTimeImmutable());
+            $s->setCreatedBy($users['admin@pop.cl']);
             $this->em->persist($s);
-            if ($i % 50 === 0) $this->em->flush();
+            $created++;
+            if ($created % 50 === 0) {
+                $this->em->flush();
+            }
         }
 
-        $s = new Settlement(); $s->setProperty($props[0]); $s->setFechaInicio(new \DateTime('2025-12-01')); $s->setFechaTermino(new \DateTime('2025-12-31')); $s->setTotal(673910); $s->setEstado('ANULADA'); $s->setObservacion("ANULADA test"); if (method_exists($s, 'setCreatedAt')) $s->setCreatedAt(new \DateTimeImmutable()); if (method_exists($s, 'setCreatedBy')) $s->setCreatedBy($users['admin@pop.cl']); $this->em->persist($s);
+        $s = new Settlement(); $s->setProperty($props[0]); $s->setFechaInicio(new \DateTime('2025-11-01')); $s->setFechaTermino(new \DateTime('2025-11-30')); $s->setTotalCargo('566100'); $s->setTotalDescuento('0'); $s->setTotalNeto('566100'); $s->setIva('107559'); $s->setTotal('673659'); $s->setEstado('ANULADA'); $s->setMotivoAnulacion('ANULADA test | por admin@pop.cl'); $s->setObservacion('ANULADA test | por admin@pop.cl'); $s->setCreatedAt(new \DateTimeImmutable()); $s->setCreatedBy($users['admin@pop.cl']); $this->em->persist($s);
         $this->em->flush();
 
         $io->success("Listo: ".count($props)." propiedades y $count PAGADA");

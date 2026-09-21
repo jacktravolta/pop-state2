@@ -43,6 +43,27 @@ class RutService
     }
     
     /**
+     * Calcula el dígito verificador (módulo 11) para el cuerpo del RUT.
+     */
+    public function calculateDv(string $body): string
+    {
+        $body = preg_replace('/[^0-9]/', '', $body) ?? '';
+        $sum = 0;
+        $multiplier = 2;
+        for ($i = strlen($body) - 1; $i >= 0; $i--) {
+            $sum += (int) $body[$i] * $multiplier;
+            $multiplier = $multiplier === 7 ? 2 : $multiplier + 1;
+        }
+        $remainder = 11 - ($sum % 11);
+
+        return match ($remainder) {
+            11 => '0',
+            10 => 'K',
+            default => (string) $remainder,
+        };
+    }
+
+    /**
      * Limpia el RUT (quita puntos y guiones)
      */
     public function clean(string $rut): string
